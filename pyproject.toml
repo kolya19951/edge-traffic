@@ -9,7 +9,9 @@ description = "Edge traffic analytics on Raspberry Pi"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi",
-    "opencv-python-headless",
+    "numpy",
+    "opencv-python",
+    "pydantic",
     "uvicorn[standard]",
     "pydantic-settings",
 ]

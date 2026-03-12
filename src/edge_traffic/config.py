@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,6 +11,12 @@ class Settings(BaseSettings):
     api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=8000)
     log_level: str = Field(default="INFO")
+
+    frame_source: Literal["fake", "ip"] = Field(default="fake")
+    camera_url: str | None = Field(default=None)
+    camera_width: int = Field(default=640)
+    camera_height: int = Field(default=480)
+    camera_fps: float = Field(default=5.0)
 
     model_config = SettingsConfigDict(
         env_file=".env",
