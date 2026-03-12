@@ -3,10 +3,10 @@ install:
 	pip install -e ".[dev]"
 
 run-api:
-	uvicorn apps.api.main:app --host 0.0.0.0 --port 8000
+	uvicorn edge_traffic.api.main:app --host 0.0.0.0 --port 8000
 
 run-worker:
-	python -m apps.worker.main
+	python -m edge_traffic.worker.main
 
 test:
 	pytest
