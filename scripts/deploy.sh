@@ -21,6 +21,6 @@ pip install -e ".[dev]"
 echo "Restarting app..."
 pkill -f "uvicorn src.app:app" || true
 
-nohup .venv/bin/uvicorn src.app:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
+nohup .venv/bin/uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
 
 echo "Deploy finished"
