@@ -1,5 +1,11 @@
-from src.app import healthcheck
+from fastapi.testclient import TestClient
+
+from src.app import app
+
+client = TestClient(app)
 
 
-def test_healthcheck():
-    assert healthcheck() == "OK"
+def test_health() -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}

@@ -1,6 +1,13 @@
-def healthcheck() -> str:
-    return "OK"
+from fastapi import FastAPI
+
+app = FastAPI()
 
 
-if __name__ == "__main__":
-    print(healthcheck())
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/")
+def root() -> dict[str, str]:
+    return {"message": "edge-traffic running"}

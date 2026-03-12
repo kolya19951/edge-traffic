@@ -4,7 +4,6 @@ set -e
 APP_DIR="$HOME/edge-traffic"
 
 echo "Starting deploy..."
-
 cd "$APP_DIR"
 
 echo "Updating repo..."
@@ -20,9 +19,8 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 echo "Restarting app..."
+pkill -f "uvicorn src.app:app" || true
 
-pkill -f "python src/app.py" || true
-
-nohup .venv/bin/python src/app.py > app.log 2>&1 &
+nohup .venv/bin/uvicorn src.app:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
 
 echo "Deploy finished"
