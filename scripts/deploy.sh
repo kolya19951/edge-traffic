@@ -1,7 +1,9 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 APP_DIR="$HOME/edge-traffic"
+VENV_DIR="$APP_DIR/.venv"
+PYTHON_BIN="python3"
 
 echo "Starting deploy..."
 cd "$APP_DIR"
@@ -9,18 +11,23 @@ cd "$APP_DIR"
 echo "Updating repo..."
 git pull origin main
 
-echo "Creating virtualenv..."
-python3 -m venv .venv || true
+if [ ! -d "$VENV_DIR" ]; then
+  echo "Creating virtualenv..."
+  $PYTHON_BIN -m venv "$VENV_DIR"
+fi
 
-source .venv/bin/activate
+source "$VENV_DIR/bin/activate"
 
 echo "Installing dependencies..."
-pip install --upgrade pip
-pip install -e ".[dev]"
+make install
 
-echo "Restarting app..."
-pkill -f "uvicorn src.app:app" || true
+echo "Stopping existing API process..."
+pkill -f "uvicorn edge_traffic.api.main:app" || true
 
-nohup .venv/bin/uvicorn apps.api.main:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
+echo "Starting API..."
+nohup "$VENV_DIR/bin/uvicorn" edge_traffic.api.main:app \
+  --host 0.0.0.0 \
+  --port 8000 \
+  > app.log 2>&1 &
 
 echo "Deploy finished"
