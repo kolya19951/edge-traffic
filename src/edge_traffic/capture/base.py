@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Iterator
 
-import numpy as np
+from edge_traffic.domain.frame import Frame
 
 
 class FrameProvider(ABC):
@@ -10,7 +10,7 @@ class FrameProvider(ABC):
     """
 
     @abstractmethod
-    def frames(self) -> Iterator[np.ndarray]:
+    def frames(self) -> Iterator[Frame]:
         """
         Yield frames indefinitely.
         """

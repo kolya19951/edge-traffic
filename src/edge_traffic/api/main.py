@@ -1,14 +1,18 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
 from edge_traffic.config import get_settings
 from edge_traffic.logging import setup_logging
+from edge_traffic.storage.latest_snapshot import LatestSnapshotStore
 
 settings = get_settings()
 setup_logging(settings)
 logger = logging.getLogger(__name__)
+snapshot_store = LatestSnapshotStore(settings.latest_snapshot_dir)
 
 
 @asynccontextmanager
@@ -44,3 +48,19 @@ def info() -> dict[str, str | int]:
         "api_port": settings.api_port,
         "log_level": settings.log_level,
     }
+
+
+@app.get("/snapshot/meta")
+def snapshot_meta() -> dict[str, str | int]:
+    metadata = snapshot_store.load_metadata()
+    if metadata is None:
+        raise HTTPException(status_code=404, detail="No snapshot available")
+    return metadata
+
+
+@app.get("/snapshot.jpg")
+def snapshot_image() -> FileResponse:
+    image_path = Path(settings.latest_snapshot_dir) / "snapshot.jpg"
+    if not image_path.exists():
+        raise HTTPException(status_code=404, detail="No snapshot image available")
+    return FileResponse(image_path, media_type="image/jpeg")
