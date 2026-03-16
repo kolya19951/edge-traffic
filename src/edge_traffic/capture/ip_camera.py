@@ -2,25 +2,27 @@ import time
 from typing import Iterator
 
 import cv2
-import numpy as np
 
 from edge_traffic.capture.base import FrameProvider
+from edge_traffic.domain.frame import Frame
 
 
 class IPCameraFrameProvider(FrameProvider):
     def __init__(
-        self,
-        url: str,
-        width: int | None = None,
-        height: int | None = None,
-        fps: float | None = None,
-        reconnect_delay: float = 2.0,
+            self,
+            url: str,
+            width: int | None = None,
+            height: int | None = None,
+            fps: float | None = None,
+            reconnect_delay: float = 2.0,
+            source: str = "ip_camera"
     ) -> None:
         self.url = url
         self.width = width
         self.height = height
         self.fps = fps
         self.reconnect_delay = reconnect_delay
+        self.source = source
 
     def _open(self) -> cv2.VideoCapture:
         cap = cv2.VideoCapture(self.url)
@@ -32,8 +34,9 @@ class IPCameraFrameProvider(FrameProvider):
             cap.set(cv2.CAP_PROP_FPS, self.fps)
         return cap
 
-    def frames(self) -> Iterator[np.ndarray]:
+    def frames(self) -> Iterator[Frame]:
         cap = self._open()
+        frame_id = 0
 
         try:
             while True:
@@ -43,13 +46,18 @@ class IPCameraFrameProvider(FrameProvider):
                     cap = self._open()
                     continue
 
-                ok, frame = cap.read()
-                if not ok or frame is None:
+                ok, image = cap.read()
+                if not ok or image is None:
                     cap.release()
                     time.sleep(self.reconnect_delay)
                     cap = self._open()
                     continue
 
-                yield frame
+                frame_id += 1
+                yield Frame.create(
+                    frame_id=frame_id,
+                    source=self.source,
+                    image=image
+                )
         finally:
             cap.release()

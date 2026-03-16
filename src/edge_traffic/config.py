@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     camera_height: int = Field(default=480)
     camera_fps: float = Field(default=5.0)
 
+    data_dir: str = Field(default="data")
+    latest_snapshot_dir: str = Field(default="data/latest")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
