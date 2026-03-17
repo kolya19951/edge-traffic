@@ -1,12 +1,14 @@
 from dataclasses import dataclass
 from datetime import datetime, UTC
 
+from uuid import uuid4
+
 import numpy as np
 
 
 @dataclass(slots=True)
 class Frame:
-    frame_id: int
+    frame_id: str
     source: str
     captured_at: datetime
     image: np.ndarray
@@ -24,9 +26,9 @@ class Frame:
         return int(self.image.shape[2]) if self.image.ndim == 3 else 1
 
     @classmethod
-    def create(cls, frame_id: int, source: str, image: np.ndarray) -> "Frame":
+    def create(cls, source: str, image: np.ndarray) -> "Frame":
         return cls(
-            frame_id=frame_id,
+            frame_id=str(uuid4()),
             source=source,
             captured_at=datetime.now(UTC),
             image=image,

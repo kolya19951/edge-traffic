@@ -51,7 +51,7 @@ def info() -> dict[str, str | int]:
 
 
 @app.get("/snapshot/meta")
-def snapshot_meta() -> dict[str, str | int]:
+def snapshot_meta() -> dict[str, str | int | dict]:
     metadata = snapshot_store.load_metadata()
     if metadata is None:
         raise HTTPException(status_code=404, detail="No snapshot available")
