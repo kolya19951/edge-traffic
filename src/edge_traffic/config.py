@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     data_dir: str = Field(default="data")
     latest_snapshot_dir: str = Field(default="data/latest")
 
+    motion_enabled: bool = Field(default=True)
+    motion_resize_width: int = Field(default=320)
+    motion_blur_kernel_size: int = Field(default=5)
+    motion_diff_threshold: int = Field(default=25)
+    motion_min_area: int = Field(default=500)
+    motion_dilation_iterations: int = Field(default=2)
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

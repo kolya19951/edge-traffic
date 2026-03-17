@@ -4,6 +4,8 @@ from edge_traffic.capture.factory import build_frame_provider
 from edge_traffic.config import get_settings
 from edge_traffic.logging import setup_logging
 from edge_traffic.storage.latest_snapshot import LatestSnapshotStore
+from edge_traffic.processing.pipeline import ProcessingPipeline
+from edge_traffic.processing.motion import MotionDetectionConfig, MotionDetectionStage
 
 
 def main() -> None:
@@ -20,15 +22,33 @@ def main() -> None:
         settings.camera_url,
     )
 
+    pipeline = ProcessingPipeline(
+        stages=[
+            MotionDetectionStage(
+                MotionDetectionConfig(
+                    enable=settings.motion_enabled,
+                    resize_width=settings.motion_resize_width,
+                    blur_kernel_size=settings.motion_blur_kernel_size,
+                    diff_threshold=settings.motion_diff_threshold,
+                    min_area=settings.motion_min_area,
+                    dilation_iterations=settings.motion_dilation_iterations
+                )
+            )
+        ]
+    )
+
     for frame in provider.frames():
-        snapshot_store.save(frame)
+        processing_metadata = pipeline.process(frame)
+
+        snapshot_store.save(frame, extra_metadata=processing_metadata)
         logger.info(
             "frame received id=%s source=%s shape=(%s, %s, %s)",
             frame.frame_id,
             frame.source,
             frame.height,
             frame.width,
-            frame.channels
+            frame.channels,
+            extra={"processing_metadata": processing_metadata},
         )
 
 

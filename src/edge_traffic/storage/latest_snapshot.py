@@ -16,7 +16,7 @@ class LatestSnapshotStore:
         self.image_path = self.base_path / "snapshot.jpg"
         self.meta_path = self.base_path / "snapshot.json"
 
-    def save(self, frame: Frame) -> None:
+    def save(self, frame: Frame, extra_metadata: dict[str, Any] | None = None) -> None:
         metadata = {
             "frame_id": frame.frame_id,
             "source": frame.source,
@@ -25,6 +25,9 @@ class LatestSnapshotStore:
             "height": frame.height,
             "channels": frame.channels,
         }
+
+        if extra_metadata:
+            metadata.update(extra_metadata)
 
         self._write_image_atomic(frame)
         self._write_json_atomic(metadata)
@@ -43,10 +46,10 @@ class LatestSnapshotStore:
         self.base_path.mkdir(parents=True, exist_ok=True)
 
         with NamedTemporaryFile(
-            mode="wb",
-            suffix=".jpg",
-            dir=self.base_path,
-            delete=False,
+                mode="wb",
+                suffix=".jpg",
+                dir=self.base_path,
+                delete=False,
         ) as tmp:
             tmp_path = Path(tmp.name)
 
@@ -66,11 +69,11 @@ class LatestSnapshotStore:
         self.base_path.mkdir(parents=True, exist_ok=True)
 
         with NamedTemporaryFile(
-            mode="w",
-            suffix=".json",
-            dir=self.base_path,
-            delete=False,
-            encoding="utf-8",
+                mode="w",
+                suffix=".json",
+                dir=self.base_path,
+                delete=False,
+                encoding="utf-8",
         ) as tmp:
             json.dump(data, tmp)
             tmp.flush()

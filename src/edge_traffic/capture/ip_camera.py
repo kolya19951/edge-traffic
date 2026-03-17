@@ -36,7 +36,6 @@ class IPCameraFrameProvider(FrameProvider):
 
     def frames(self) -> Iterator[Frame]:
         cap = self._open()
-        frame_id = 0
 
         try:
             while True:
@@ -53,9 +52,7 @@ class IPCameraFrameProvider(FrameProvider):
                     cap = self._open()
                     continue
 
-                frame_id += 1
                 yield Frame.create(
-                    frame_id=frame_id,
                     source=self.source,
                     image=image
                 )

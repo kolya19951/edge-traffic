@@ -1,6 +1,7 @@
 import time
 from typing import Iterator
 
+
 import numpy as np
 
 from edge_traffic.capture.base import FrameProvider
@@ -24,15 +25,12 @@ class FakeFrameProvider(FrameProvider):
         self.source = source
 
     def frames(self) -> Iterator[Frame]:
-        frame_id = 0
         while True:
             image = np.random.randint(
                 0, 255, (self.height, self.width, 3), dtype=np.uint8
             )
-            frame_id += 1
 
             yield Frame.create(
-                frame_id=frame_id,
                 source=self.source,
                 image=image
             )

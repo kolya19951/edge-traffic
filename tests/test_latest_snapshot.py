@@ -7,12 +7,13 @@ from edge_traffic.storage.latest_snapshot import LatestSnapshotStore
 def test_latest_snapshot_store_save_and_load(tmp_path) -> None:
     store = LatestSnapshotStore(str(tmp_path))
     image = np.zeros((480, 640, 3), dtype=np.uint8)
-    frame = Frame.create(frame_id=1, source="test", image=image)
+    frame = Frame.create(source="test", image=image)
+    frame_id = frame.frame_id
 
     store.save(frame)
 
     metadata = store.load_metadata()
     assert metadata is not None
-    assert metadata["frame_id"] == 1
+    assert metadata["frame_id"] == frame_id
     assert metadata["source"] == "test"
     assert store.image_exists()
