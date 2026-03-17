@@ -63,3 +63,11 @@ def snapshot_image() -> FileResponse:
     if not image_path:
         raise HTTPException(status_code=404, detail="No snapshot image available")
     return FileResponse(image_path, media_type="image/jpeg")
+
+
+@app.get("/snapshot_motion.jpg")
+def snapshot_image_motion() -> FileResponse:
+    image_path = snapshot_store.get_latest_motion_image_path()
+    if not image_path:
+        raise HTTPException(status_code=404, detail="No snapshot image available")
+    return FileResponse(image_path, media_type="image/jpeg")

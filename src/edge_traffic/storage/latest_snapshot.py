@@ -16,6 +16,7 @@ class LatestSnapshotRef:
     snapshot_id: str
     dir_path: Path
     image_path: Path
+    motion_image_path: Path | None
     meta_path: Path
 
 
@@ -51,6 +52,24 @@ class LatestSnapshotStore:
         if extra_metadata:
             metadata.update(extra_metadata)
 
+            motion = metadata.get("motion")
+            regions = motion.get("regions", []) if isinstance(motion, dict) else []
+            if regions:
+                img_move = frame.image.copy()
+                for region in regions:
+                    cv2.rectangle(
+                        img_move,
+                        (region["x1"], region["y1"]),
+                        (region["x2"], region["y2"]),
+                        (0, 255, 0),
+                        2,
+                    )
+
+                image_move_path = tmp_dir / "snapshot_motion.jpg"
+                move_ok = cv2.imwrite(str(image_move_path), img_move)
+                if not move_ok:
+                    raise RuntimeError("Failed to write motion snapshot image")
+
         ok = cv2.imwrite(str(image_path), frame.image)
 
         if not ok:
@@ -82,6 +101,10 @@ class LatestSnapshotStore:
         ref = self.resolve_latest()
         return None if ref is None else ref.image_path
 
+    def get_latest_motion_image_path(self) -> Path | None:
+        ref = self.resolve_latest()
+        return None if ref is None else ref.motion_image_path
+
     def resolve_latest(self) -> LatestSnapshotRef | None:
         if not self.latest_manifest_path.exists():
             return None
@@ -98,6 +121,7 @@ class LatestSnapshotStore:
 
         dir_path = self.snapshots_path / str(snapshot_id)
         image_path = dir_path / "snapshot.jpg"
+        motion_image_path = dir_path / "snapshot_motion.jpg"
         meta_path = dir_path / "snapshot.json"
 
         if not (dir_path.exists() and image_path.exists() and meta_path.exists()):
@@ -107,6 +131,7 @@ class LatestSnapshotStore:
             snapshot_id=str(snapshot_id),
             dir_path=dir_path,
             image_path=image_path,
+            motion_image_path=motion_image_path if motion_image_path.exists() else None,
             meta_path=meta_path,
         )
 
