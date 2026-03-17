@@ -68,6 +68,17 @@ class MotionDetectionStage(ProcessingStage):
             }
             return metadata
 
+        if self._previous_gray.shape != gray.shape:
+            self._previous_gray = gray
+            metadata["motion"] = {
+                "enabled": True,
+                "detected": False,
+                "regions": [],
+                "pixel_ratio": 0.0,
+                "warmup": True,
+            }
+            return metadata
+
         frame_delta = cv2.absdiff(self._previous_gray, gray)
         _, thresh = cv2.threshold(
             frame_delta,

@@ -101,3 +101,20 @@ def test_motion_stage_disabled_returns_disabled_metadata() -> None:
     assert metadata["motion"]["detected"] is False
     assert metadata["motion"]["regions"] == []
     assert metadata["motion"]["pixel_ratio"] == 0.0
+
+
+def test_motion_stage_shape_change_resets_warmup_before_diff() -> None:
+    frame1 = make_frame(black_image(width=640, height=480))
+    frame2 = make_frame(black_image(width=800, height=480))
+
+    stage = MotionDetectionStage(MotionDetectionConfig(resize_width=320))
+
+    warmup = stage.process(frame1, {})
+    reset = stage.process(frame2, {})
+    steady = stage.process(frame2, {})
+
+    assert warmup["motion"]["warmup"] is True
+    assert reset["motion"]["warmup"] is True
+    assert reset["motion"]["detected"] is False
+    assert steady["motion"]["warmup"] is False
+    assert steady["motion"]["detected"] is False
