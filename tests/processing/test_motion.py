@@ -1,6 +1,5 @@
 from tests.helpers import black_image, make_frame, image_with_rectangle
 from edge_traffic.processing.motion import MotionDetectionStage, MotionDetectionConfig
-import cv2
 
 
 def test_motion_stage_first_frame_is_warmup() -> None:
