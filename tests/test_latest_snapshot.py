@@ -10,10 +10,14 @@ def test_latest_snapshot_store_save_and_load(tmp_path) -> None:
     frame = Frame.create(source="test", image=image)
     frame_id = frame.frame_id
 
-    store.save(frame)
+    snapshot_id = store.save(frame)
 
     metadata = store.load_metadata()
     assert metadata is not None
     assert metadata["frame_id"] == frame_id
+    assert metadata["snapshot_id"] == snapshot_id
     assert metadata["source"] == "test"
     assert store.image_exists()
+    image_path = store.get_latest_image_path()
+    assert image_path is not None
+    assert image_path.parent.name == snapshot_id

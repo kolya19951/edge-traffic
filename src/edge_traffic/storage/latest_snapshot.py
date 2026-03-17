@@ -1,4 +1,7 @@
 import json
+import os
+import uuid
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
@@ -8,16 +11,35 @@ import cv2
 from edge_traffic.domain.frame import Frame
 
 
+@dataclass(frozen=True, slots=True)
+class LatestSnapshotRef:
+    snapshot_id: str
+    dir_path: Path
+    image_path: Path
+    meta_path: Path
+
+
 class LatestSnapshotStore:
     def __init__(self, base_dir: str) -> None:
         self.base_path = Path(base_dir)
         self.base_path.mkdir(parents=True, exist_ok=True)
 
-        self.image_path = self.base_path / "snapshot.jpg"
-        self.meta_path = self.base_path / "snapshot.json"
+        self.latest_manifest_path = self.base_path / "latest.json"
+        self.snapshots_path = self.base_path / "snapshots"
+        self.snapshots_path.mkdir(parents=True, exist_ok=True)
 
-    def save(self, frame: Frame, extra_metadata: dict[str, Any] | None = None) -> None:
+    def save(self, frame: Frame, extra_metadata: dict[str, Any] | None = None) -> str:
+        snapshot_id = self._new_snapshot_id(frame)
+
+        tmp_dir = self.snapshots_path / f".tmp-{snapshot_id}"
+        final_dir = self.snapshots_path / snapshot_id
+        tmp_dir.mkdir(parents=True, exist_ok=False)
+
+        image_path = tmp_dir / "snapshot.jpg"
+        meta_path = tmp_dir / "snapshot.json"
+
         metadata = {
+            "snapshot_id": snapshot_id,
             "frame_id": frame.frame_id,
             "source": frame.source,
             "captured_at": frame.captured_at.isoformat(),
@@ -29,43 +51,69 @@ class LatestSnapshotStore:
         if extra_metadata:
             metadata.update(extra_metadata)
 
-        self._write_image_atomic(frame)
-        self._write_json_atomic(metadata)
+        ok = cv2.imwrite(str(image_path), frame.image)
+
+        if not ok:
+            raise RuntimeError("Failed to write snapshot image")
+
+        with meta_path.open("w", encoding="utf-8") as f:
+            json.dump(metadata, f)
+            f.flush()
+            os.fsync(f.fileno())
+
+        tmp_dir.replace(final_dir)
+        manifest = {"snapshot_id": snapshot_id}
+        self._write_json_atomic(manifest, self.latest_manifest_path)
+        return snapshot_id
 
     def load_metadata(self) -> dict[str, Any] | None:
-        if not self.meta_path.exists():
+        ref = self.resolve_latest()
+
+        if not ref:
             return None
 
-        with self.meta_path.open("r", encoding="utf-8") as f:
+        with ref.meta_path.open("r", encoding="utf-8") as f:
             return json.load(f)
 
     def image_exists(self) -> bool:
-        return self.image_path.exists()
+        return self.get_latest_image_path() is not None
 
-    def _write_image_atomic(self, frame: Frame) -> None:
-        self.base_path.mkdir(parents=True, exist_ok=True)
+    def get_latest_image_path(self) -> Path | None:
+        ref = self.resolve_latest()
+        return None if ref is None else ref.image_path
 
-        with NamedTemporaryFile(
-                mode="wb",
-                suffix=".jpg",
-                dir=self.base_path,
-                delete=False,
-        ) as tmp:
-            tmp_path = Path(tmp.name)
+    def resolve_latest(self) -> LatestSnapshotRef | None:
+        if not self.latest_manifest_path.exists():
+            return None
 
         try:
-            ok = cv2.imwrite(str(tmp_path), frame.image)
-            if not ok:
-                raise RuntimeError("Failed to write snapshot image")
-            tmp_path.replace(self.image_path)
-        finally:
-            if tmp_path.exists():
-                try:
-                    tmp_path.unlink()
-                except FileNotFoundError:
-                    pass
+            with self.latest_manifest_path.open("r", encoding="utf-8") as f:
+                manifest = json.load(f)
+        except json.JSONDecodeError:
+            return None
 
-    def _write_json_atomic(self, data: dict[str, Any]) -> None:
+        snapshot_id = manifest.get("snapshot_id")
+        if not snapshot_id:
+            return None
+
+        dir_path = self.snapshots_path / str(snapshot_id)
+        image_path = dir_path / "snapshot.jpg"
+        meta_path = dir_path / "snapshot.json"
+
+        if not (dir_path.exists() and image_path.exists() and meta_path.exists()):
+            return None
+
+        return LatestSnapshotRef(
+            snapshot_id=str(snapshot_id),
+            dir_path=dir_path,
+            image_path=image_path,
+            meta_path=meta_path,
+        )
+
+    def _new_snapshot_id(self, frame: Frame) -> str:
+        return f"f{frame.frame_id}-{uuid.uuid4().hex}"
+
+    def _write_json_atomic(self, data: dict[str, Any], dest_path: Path) -> None:
         self.base_path.mkdir(parents=True, exist_ok=True)
 
         with NamedTemporaryFile(
@@ -79,4 +127,4 @@ class LatestSnapshotStore:
             tmp.flush()
             tmp_path = Path(tmp.name)
 
-        tmp_path.replace(self.meta_path)
+        tmp_path.replace(dest_path)

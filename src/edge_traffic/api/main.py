@@ -1,6 +1,5 @@
 import logging
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -60,7 +59,7 @@ def snapshot_meta() -> dict[str, str | int | dict]:
 
 @app.get("/snapshot.jpg")
 def snapshot_image() -> FileResponse:
-    image_path = Path(settings.latest_snapshot_dir) / "snapshot.jpg"
-    if not image_path.exists():
+    image_path = snapshot_store.get_latest_image_path()
+    if not image_path:
         raise HTTPException(status_code=404, detail="No snapshot image available")
     return FileResponse(image_path, media_type="image/jpeg")
