@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -153,3 +154,23 @@ class LatestSnapshotStore:
             tmp_path = Path(tmp.name)
 
         tmp_path.replace(dest_path)
+
+    def generate_snapshot_stream(self):
+        while True:
+            image_path = self.get_latest_motion_image_path()
+            if not image_path:
+                time.sleep(0.1)
+                continue
+            if self.get_latest_motion_image_path().exists():
+                try:
+                    last_bytes = image_path.read_bytes()
+
+                    if last_bytes is not None:
+                        yield (
+                                b"--frame\r\n"
+                                b"Content-Type: image/jpeg\r\n\r\n" + last_bytes + b"\r\n"
+                        )
+                except OSError:
+                    pass
+
+            time.sleep(0.1)

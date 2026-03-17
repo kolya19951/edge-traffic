@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from edge_traffic.config import get_settings
 from edge_traffic.logging import setup_logging
@@ -71,3 +71,11 @@ def snapshot_image_motion() -> FileResponse:
     if not image_path:
         raise HTTPException(status_code=404, detail="No snapshot image available")
     return FileResponse(image_path, media_type="image/jpeg")
+
+
+@app.get("/motion_stream")
+def motion_stream():
+    return StreamingResponse(
+        snapshot_store.generate_snapshot_stream(),
+        media_type="multipart/x-mixed-replace; boundary=frame"
+    )
