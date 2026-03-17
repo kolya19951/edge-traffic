@@ -161,16 +161,15 @@ class LatestSnapshotStore:
             if not image_path:
                 time.sleep(0.1)
                 continue
-            if self.get_latest_motion_image_path().exists():
-                try:
-                    last_bytes = image_path.read_bytes()
+            try:
+                last_bytes = image_path.read_bytes()
 
-                    if last_bytes is not None:
-                        yield (
-                                b"--frame\r\n"
-                                b"Content-Type: image/jpeg\r\n\r\n" + last_bytes + b"\r\n"
-                        )
-                except OSError:
-                    pass
+                if last_bytes is not None:
+                    yield (
+                            b"--frame\r\n"
+                            b"Content-Type: image/jpeg\r\n\r\n" + last_bytes + b"\r\n"
+                    )
+            except OSError:
+                pass
 
             time.sleep(0.1)
